@@ -1,0 +1,101 @@
+name: Build OPEN CODE Mobile APK
+
+on:
+  push:
+    branches: [main, master, dev]
+  workflow_dispatch:
+    inputs:
+      release:
+        description: 'Create a GitHub Release'
+        required: true
+        default: 'false'
+        type: boolean
+      version:
+        description: 'Version tag (e.g., v1.0.0)'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Prebuild Android
+        run: npx expo prebuild --platform android --clean
+
+      - name: Build Debug APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: opencode-mobile-debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+
+      - name: Build Release APK
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.release == 'true'
+        run: |
+          cd android
+          ./gradlew assembleRelease
+
+      - name: Upload Release APK
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.release == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: opencode-mobile-release
+          path: android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: warn
+
+      - name: Create Release
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.release == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.version || 'v1.0.0' }}
+          name: "OPEN CODE Mobile ${{ github.event.inputs.version || 'v1.0.0' }}"
+          body: |
+            # OPEN CODE Mobile
+            
+            AI Coding Agent for Android — Liquid Glass Edition
+            
+            ## Features
+            - 🌊 **Liquid Glass UI** — Stunning glass morphism interface
+            - 🤖 **Multi-Model AI** — GPT-4o, Claude 3.5, Gemini 2.0
+            - 📷 **Image Support** — Analyze screenshots and code images
+            - 🔐 **Google Sign-In** — Real authentication
+            - 📱 **Native Android** — Built with React Native
+            - 🔒 **Privacy First** — Your API keys stay on device
+            
+            ## Installation
+            Download the APK and install it on your Android device.
+          files: |
+            android/app/build/outputs/apk/debug/app-debug.apk
+          draft: false
+          prerelease: false

@@ -1,0 +1,31 @@
+node_modules/
+.expo/
+dist/
+*.jks
+*.keystore
+*.log
+*.tsbuildinfo
+
+# Android
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/captures/
+.idea/
+*.iml
+
+# iOS
+ios/Pods/
+ios/build/
+*.xcworkspace
+*.xcuserdata
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+*.p12
